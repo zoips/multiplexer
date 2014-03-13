@@ -148,9 +148,21 @@ SkipList.prototype = {
 
     forEach: function(fn) {
         for (let node = this._head.skip[0]; node != null; node = node.skip[0]) {
-            fn(node.key, node.value);
+            try {
+                fn(node.key, node.value);
+            } catch (ex) {
+                if (ex instanceof SkipList.StopIteration) {
+                    break;
+                } else {
+                    throw ex;
+                }
+            }
         }
     }
+};
+
+SkipList.StopIteration = function() {
+
 };
 
 module.exports = SkipList;
