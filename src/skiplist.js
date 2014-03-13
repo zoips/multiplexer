@@ -63,7 +63,7 @@ SkipList.prototype = {
         return this._length;
     },
 
-    add: function(key, value) {
+    set: function(key, value) {
         const self = this;
         const updates = [];
         let node = self._head;
