@@ -1,5 +1,5 @@
 {
-    "name": "websocket-message",
+    "name": "ws-multiplexer",
     "version": "0.1.0",
     "author": "Matt Eberts <downturn@gmail.com>",
     "description": "websocket message/response multiplexer",
