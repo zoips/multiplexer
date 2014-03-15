@@ -82,7 +82,15 @@ _.extend(Multiplexer.prototype, {
             if (message[2]) {
                 pending.deferable.resolve(message[3]);
             } else {
-                pending.deferable.reject(message[3]);
+                const err = new Error(message[3]);
+
+                // copy over all properties onto the error object
+                Object.keys(message[3]).reduce(function(obj, k) {
+                    obj[k] = message[3][k];
+                    return obj;
+                }, err);
+
+                pending.deferable.reject(err);
             }
         } else {
             const id = self.id++;
@@ -92,7 +100,18 @@ _.extend(Multiplexer.prototype, {
                 promise.then(function(v) {
                     self.conn.send(JSON.stringify([id, message[0], true, v]));
                 }).catch(function(e) {
-                    self.conn.send(JSON.stringify([id, message[0], false, e]));
+                    const err = {
+                        stack: e.stack,
+                        message: e.message
+                    };
+
+                    // copy over all enumerable properties onto the message error object
+                    Object.keys(e).reduce(function(obj, k) {
+                        obj[k] = e[k];
+                        return obj;
+                    }, err);
+
+                    self.conn.send(JSON.stringify([id, message[0], false, err]));
                 });
             }
         }

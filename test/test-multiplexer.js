@@ -77,13 +77,19 @@ describe("Multiplexer", function() {
                 const testObj = {
                     "foo": "baz"
                 };
+                let stack = null;
 
                 remote.dispatch = function(message) {
                     assert.deepEqual(message, testObj);
 
                     const d = bluebird.defer();
+                    const err = new Error("oh hey");
 
-                    d.reject(new Error("oh hey"));
+                    err.code = 505;
+
+                    stack = err.stack;
+
+                    d.reject(err);
 
                     return d.promise;
                 };
@@ -95,6 +101,9 @@ describe("Multiplexer", function() {
 
                     done(new Error("Did not get an exception"));
                 } catch (ex) {
+                    assert.ok(ex instanceof Error);
+                    assert.equal(ex.stack, stack);
+                    assert.equal(ex.code, 505);
                     done(null);
                 }
             } catch (ex) {
