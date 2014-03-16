@@ -8,7 +8,7 @@
     },
     "keywords": [],
     "license": "MIT",
-    "main": "src/messages",
+    "main": "src/multiplexer",
     "dependencies": {
         "bluebird": "~1.0.7",
         "underscore": "~1.5.2"
