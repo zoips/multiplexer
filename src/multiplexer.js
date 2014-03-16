@@ -10,13 +10,12 @@ function bucketTime(time) {
     return Math.floor(time / 1000) * 1000;
 }
 
-const Multiplexer = function(conn, dispatch) {
+const Multiplexer = function(conn) {
     const self = this;
 
     self.pending = new Map();
     self.expireBuckets = new SkipList();
     self.conn = conn;
-    self.dispatch = dispatch;
     self.expireId = setInterval(self.expire.bind(self), 250);
     self.conn.on("message", self.onMessage.bind(self));
 };
@@ -94,26 +93,26 @@ _.extend(Multiplexer.prototype, {
             }
         } else {
             const id = self.id++;
-            const promise = self.dispatch(message[3]);
+            const d = bluebird.defer();
 
-            if (promise) {
-                promise.then(function(v) {
-                    self.conn.send(JSON.stringify([id, message[0], true, v]));
-                }).catch(function(e) {
-                    const err = {
-                        stack: e.stack,
-                        message: e.message
-                    };
+            d.promise.then(function(v) {
+                self.conn.send(JSON.stringify([id, message[0], true, v]));
+            }).catch(function(e) {
+                const err = {
+                    stack: e.stack,
+                    message: e.message
+                };
 
-                    // copy over all enumerable properties onto the message error object
-                    Object.keys(e).reduce(function(obj, k) {
-                        obj[k] = e[k];
-                        return obj;
-                    }, err);
+                // copy over all enumerable properties onto the message error object
+                Object.keys(e).reduce(function(obj, k) {
+                    obj[k] = e[k];
+                    return obj;
+                }, err);
 
-                    self.conn.send(JSON.stringify([id, message[0], false, err]));
-                });
-            }
+                self.conn.send(JSON.stringify([id, message[0], false, err]));
+            });
+
+            self.emit("message", message[3], d);
         }
     },
 

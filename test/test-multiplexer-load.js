@@ -44,19 +44,20 @@ describe("Multiplexer", function() {
         remote = new Multiplexer(remoteConn);
     });
 
+    afterEach(function() {
+        local.removeAllListeners("message");
+        remote.removeAllListeners("message");
+    });
 
     it("load test", function(done) {
         bluebird.coroutine(function*() {
-            remote.dispatch = function(message) {
-                const d = bluebird.defer();
+            remote.on("message", function(message, d) {
                 const sleep = Math.floor(Math.random() * 90) + 10;
 
                 setTimeout(function() {
                     d.resolve(message + "!");
                 }, sleep);
-
-                return d.promise;
-            };
+            });
 
             const promises = [];
 

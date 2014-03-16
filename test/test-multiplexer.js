@@ -42,6 +42,11 @@ describe("Multiplexer", function() {
         remote = new Multiplexer(remoteConn);
     });
 
+    afterEach(function() {
+        local.removeAllListeners("message");
+        remote.removeAllListeners("message");
+    });
+
     it("can send a message from local to remote and get the response", function(done) {
         bluebird.coroutine(function*() {
             try {
@@ -49,15 +54,11 @@ describe("Multiplexer", function() {
                     "foo": "bar"
                 };
 
-                remote.dispatch = function(message) {
+                remote.on("message", function(message, d) {
                     assert.deepEqual(message, testObj);
 
-                    const d = bluebird.defer();
-
                     d.resolve(message);
-
-                    return d.promise;
-                };
+                });
 
                 const promise = local.send(testObj);
                 const message = yield promise;
@@ -79,10 +80,9 @@ describe("Multiplexer", function() {
                 };
                 let stack = null;
 
-                remote.dispatch = function(message) {
+                remote.on("message", function(message, d) {
                     assert.deepEqual(message, testObj);
 
-                    const d = bluebird.defer();
                     const err = new Error("oh hey");
 
                     err.code = 505;
@@ -90,9 +90,7 @@ describe("Multiplexer", function() {
                     stack = err.stack;
 
                     d.reject(err);
-
-                    return d.promise;
-                };
+                });
 
                 const promise = local.send(testObj);
 
@@ -115,15 +113,11 @@ describe("Multiplexer", function() {
     it("can send multiple messages and receive all the responses", function(done) {
         bluebird.coroutine(function*() {
             try {
-                remote.dispatch = function(message) {
-                    const d = bluebird.defer();
-
+                remote.on("message", function(message, d) {
                     process.nextTick(function() {
                         d.resolve(message + "!");
                     });
-
-                    return d.promise;
-                };
+                });
 
                 const promises = [];
 
@@ -154,15 +148,11 @@ describe("Multiplexer", function() {
 
         bluebird.coroutine(function*() {
             try {
-                remote.dispatch = function(message) {
-                    const d = bluebird.defer();
-
+                remote.on("message", function(message, d) {
                     setTimeout(function() {
                         d.resolve(message + "!");
                     }, 3000);
-
-                    return d.promise;
-                };
+                });
 
                 yield local.send("asdfasdf", { maxAge: 500 });
 
