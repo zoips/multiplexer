@@ -14,9 +14,15 @@
         "underscore": "~1.5.2"
     },
     "devDependencies": {
-        "mocha": "~1.13.0"
+        "mocha": "~1.13.0",
+        "jshint": "~2.4.4"
     },
     "engines": {
         "node": ">=0.11.0"
+    },
+    "jshintConfig": {
+        "esnext": true,
+        "globalstrict": true,
+        "node": true
     }
 }

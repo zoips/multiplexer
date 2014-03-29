@@ -147,7 +147,7 @@ SkipList.prototype = {
     },
 
     forEach: function(fn) {
-        for (let node = this._head.skip[0]; node != null; node = node.skip[0]) {
+        for (let node = this._head.skip[0]; node !== null && typeof node !== "undefined"; node = node.skip[0]) {
             try {
                 fn(node.key, node.value);
             } catch (ex) {
