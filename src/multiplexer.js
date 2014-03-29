@@ -59,6 +59,12 @@ _.extend(Multiplexer.prototype, {
         return d.promise;
     },
 
+    listen: function(target, messages, opts) {
+        const self = this;
+
+        self.on("message", listener.bind(target, messages, opts));
+    },
+
     onMessage: function(data) {
         const self = this;
         const message = JSON.parse(data);
@@ -149,5 +155,24 @@ _.extend(Multiplexer.prototype, {
         });
     }
 });
+
+const listener = function(messages, opts, message, d) {
+    const self = this;
+    const handler = messages[message.type];
+
+    if (typeof handler === "function") {
+        const promise = handler.call(self, message);
+
+        promise.then(function(v) {
+            d.resolve(v);
+        }).catch(function(e) {
+            if (opts && typeof opts.errorMapper === "function") {
+                e = opts.errorMapper(e);
+            }
+
+            d.reject(e);
+        });
+    }
+};
 
 module.exports = Multiplexer;

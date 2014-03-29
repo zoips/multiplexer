@@ -166,4 +166,34 @@ describe("Multiplexer", function() {
             }
         })();
     });
+
+    it("can bind events via listen", function(done) {
+        bluebird.coroutine(function*() {
+            try {
+                const testObj = {
+                    "foo": "bar",
+                    "type": "test-message"
+                };
+                const t = {};
+                const messages = {
+                    "test-message": bluebird.coroutine(function*(message) {
+                        assert.deepEqual(message, testObj);
+
+                        return message;
+                    })
+                };
+
+                remote.listen(t, messages);
+
+                const promise = local.send(testObj);
+                const message = yield promise;
+
+                assert.deepEqual(message, testObj);
+
+                done(null);
+            } catch (ex) {
+                done(ex);
+            }
+        })();
+    })
 });
