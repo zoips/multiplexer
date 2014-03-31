@@ -1,0 +1,12 @@
+package Multiplexer.Wire;
+
+message Container {
+    enum Compression { NONE = 1; SNAPPY = 2; DEFLATE = 3; }
+
+    required int32 id = 1;
+    required Compression compression = 2 [default = NONE];
+    required string type = 3;
+    optional int32 reqId = 4;
+    optional bool success = 5 [default = true];
+    required bytes body = 6;
+}
