@@ -111,7 +111,7 @@ _.extend(Multiplexer.prototype, {
     listen: function(target, messages, opts) {
         const self = this;
 
-        self.on("message", listener.bind(target, messages, opts));
+        self.on("message", listener.bind(self, target, messages, opts));
     },
 
     onMessage: function(data, flags) {
@@ -164,21 +164,21 @@ _.extend(Multiplexer.prototype, {
                     self.conn.send(JSON.stringify([id, message[0], true, v]));
                 }
             }).catch(function(e) {
-                const err = {
-                    stack: e.stack,
-                    message: e.message
-                };
-
-                // copy over all enumerable properties onto the message error object
-                Object.keys(e).reduce(function(obj, k) {
-                    obj[k] = e[k];
-                    return obj;
-                }, err);
-
                 if (self.protobufs !== null) {
-                    self.conn.send(encodeWireContainer(id, message[0], false, err),
+                    self.conn.send(encodeWireContainer(id, message[0], false, e),
                         { binary: true });
                 } else {
+                    const err = {
+                        stack: e.stack,
+                        message: e.message
+                    };
+
+                    // copy over all enumerable properties onto the message error object
+                    Object.keys(e).reduce(function(obj, k) {
+                        obj[k] = e[k];
+                        return obj;
+                    }, err);
+
                     self.conn.send(JSON.stringify([id, message[0], false, err]));
                 }
             });
@@ -248,12 +248,18 @@ const decodeWireContainer = function(protobufs, data) {
     return message;
 };
 
-const listener = function(messages, opts, message, d) {
+const listener = function(target, messages, opts, message, d) {
     const self = this;
-    const handler = messages[message.type];
+    let handler;
+
+    if (self.protobufs !== null) {
+        handler = messages[Object.getPrototypeOf(message).toString()];
+    } else {
+        handler = messages[message.type];
+    }
 
     if (typeof handler === "function") {
-        const promise = handler.call(self, message);
+        const promise = handler.call(target, message);
 
         promise.then(function(v) {
             d.resolve(v);

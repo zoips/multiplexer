@@ -75,4 +75,34 @@ describe("Multiplexer", function() {
             }
         })();
     });
+
+    it("can bind events via listen", function(done) {
+        bluebird.coroutine(function*() {
+            try {
+                let TestNS = proto.build("TestNS");
+                let testMessage = new TestNS.TestMessage({
+                    "foo": "this is sparta!"
+                });
+                const t = {};
+                const messages = {
+                    ".TestNS.TestMessage": bluebird.coroutine(function*(message) {
+                        assert.deepEqual(message, testMessage);
+
+                        return message;
+                    })
+                };
+
+                remote.listen(t, messages);
+
+                const promise = local.send(testMessage);
+                const message = yield promise;
+
+                assert.deepEqual(message, testMessage);
+
+                done(null);
+            } catch (ex) {
+                done(ex);
+            }
+        })();
+    });
 });

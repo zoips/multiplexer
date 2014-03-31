@@ -195,5 +195,5 @@ describe("Multiplexer", function() {
                 done(ex);
             }
         })();
-    })
+    });
 });
