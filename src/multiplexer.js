@@ -20,7 +20,7 @@ function bucketTime(time) {
 /**
  * The Protobuf wire protocol.
  */
-const WIRE_PROTOS = protobufjs.loadProtoFile("src/wire.proto");
+const WIRE_PROTOS = protobufjs.loadProtoFile(__dirname + "/wire.proto");
 
 /**
  * Create a new Multiplexer on top of an event emitter that emits message events. A normal use case is on top of a
