@@ -197,3 +197,60 @@ describe("Multiplexer", function() {
         })();
     });
 });
+
+describe("Multiplexer errorMapper", function() {
+
+    it("can map errors if an errorMapper is provided", function(done) {
+        let localConn = new FakeWsConn();
+        let remoteConn = new FakeWsConn();
+        let local = new Multiplexer(localConn, {
+            errorMapper: function(e) {
+                e.message = e.message + e.message;
+
+                return e;
+            }
+        });
+        let remote = new Multiplexer(remoteConn);
+
+        localConn.remote = remoteConn;
+        remoteConn.remote = localConn;
+
+        bluebird.coroutine(function*() {
+            try {
+                const testObj = {
+                    "foo": "baz"
+                };
+                let stack = null;
+
+                remote.on("message", function(message, d) {
+                    assert.deepEqual(message, testObj);
+
+                    const err = new Error("oh hey");
+
+                    err.code = 505;
+
+                    stack = err.stack;
+
+                    d.reject(err);
+                });
+
+                const promise = local.send(testObj);
+
+                try {
+                    yield promise;
+
+                    done(new Error("Did not get an exception"));
+                } catch (ex) {
+                    assert.ok(ex instanceof Error);
+                    assert.equal(ex.stack, stack);
+                    assert.equal(ex.code, 505);
+                    assert.equal(ex.message, "oh heyoh hey");
+                    done(null);
+                }
+            } catch (ex) {
+                done(ex);
+            }
+        })();
+    });
+
+});

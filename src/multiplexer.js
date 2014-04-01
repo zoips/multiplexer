@@ -58,8 +58,14 @@ const Multiplexer = function(conn, opts) {
     self.expireId = setInterval(self.expire.bind(self), 250);
     self.conn.on("message", self.onMessage.bind(self));
 
-    if (opts && opts.protobufs) {
-        self.protobufs = opts.protobufs;
+    if (opts) {
+        if (opts.protobufs) {
+            self.protobufs = opts.protobufs;
+        }
+
+        if (opts.errorMapper) {
+            self.errorMapper = opts.errorMapper;
+        }
     }
 };
 
@@ -72,6 +78,7 @@ _.extend(Multiplexer.prototype, {
     pending: null,
     expireBuckets: null,
     protobufs: null,
+    errorMapper: null,
 
     send: function(message, opts) {
         const self = this;
@@ -142,13 +149,21 @@ _.extend(Multiplexer.prototype, {
             if (message[2]) {
                 pending.deferable.resolve(message[3]);
             } else {
-                const err = new Error(message[3]);
+                let err = message[3];
 
-                // copy over all properties onto the error object
-                Object.keys(message[3]).reduce(function(obj, k) {
-                    obj[k] = message[3][k];
-                    return obj;
-                }, err);
+                if (self.protobufs === null) {
+                    err = new Error(message[3]);
+
+                    // copy over all properties onto the error object
+                    Object.keys(message[3]).reduce(function (obj, k) {
+                        obj[k] = message[3][k];
+                        return obj;
+                    }, err);
+                }
+
+                if (self.errorMapper) {
+                    err = self.errorMapper(err);
+                }
 
                 pending.deferable.reject(err);
             }
@@ -264,8 +279,10 @@ const listener = function(target, messages, opts, message, d) {
         promise.then(function(v) {
             d.resolve(v);
         }).catch(function(e) {
-            if (opts && typeof opts.errorMapper === "function") {
+            if (opts && opts.errorMapper) {
                 e = opts.errorMapper(e);
+            } else if (self.errorMapper) {
+                e = self.errorMapper(e);
             }
 
             d.reject(e);
